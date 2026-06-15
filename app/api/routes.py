@@ -59,7 +59,7 @@ def _parse_markdown_to_pdf(md_text: str, student_name: str) -> bytes:
     """将 Markdown 文本解析并渲染为 PDF"""
 
     pdf = ChinesePDF()
-    pdf.set_auto_page_break(margin=25)
+    pdf.set_auto_page_break(auto=True, margin=25)
     pdf.add_page()
 
     # 标题页
