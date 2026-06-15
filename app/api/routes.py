@@ -4,6 +4,7 @@ import json
 import re
 import traceback
 from datetime import date
+from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 import markdown
@@ -302,12 +303,14 @@ async def download_html(request: Request):
         html_bytes = html_content.encode("utf-8")
 
         filename = f"高考志愿分析报告_{student_name}_{date.today()}.html"
+        # URL编码文件名，避免中文字符在HTTP头中触发latin-1编码错误
+        encoded_filename = quote(filename)
 
         return Response(
             content=html_bytes,
             media_type="text/html; charset=utf-8",
             headers={
-                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
                 "Content-Length": str(len(html_bytes)),
             }
         )
