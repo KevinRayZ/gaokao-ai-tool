@@ -1,0 +1,7 @@
+# Railway Nixpacks 配置
+# 安装 xhtml2pdf/lxml 需要的系统依赖
+[phases.setup]
+nixPkgs = ["pkg-config", "cairo", "pango", "gdk-pixbuf"]
+
+[variables]
+PYTHON_VERSION = "3.13"
