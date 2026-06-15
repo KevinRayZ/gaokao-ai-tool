@@ -269,6 +269,14 @@ def _parse_markdown_to_pdf(md_text: str, student_name: str) -> bytes:
 
 def _clean_markdown_formatting(text: str) -> str:
     """清理 Markdown 格式标记，保留纯文本"""
+    # 去掉 emoji（NotoSansSC 不包含 emoji 字形，会导致字体警告）
+    import re as _re
+    text = _re.sub(
+        r'[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF'
+        r'\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF'
+        r'\U00002702-\U000027B0\U000024C2-\U0001F251]+',
+        '', text
+    )
     # 去掉 **text** 和 __text__ 加粗标记（但保留文字）
     text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
     text = re.sub(r'__(.+?)__', r'\1', text)
@@ -469,7 +477,7 @@ async def download_pdf(request: Request):
         raise HTTPException(status_code=400, detail="报告内容为空")
 
     try:
-        pdf_bytes = _parse_markdown_to_pdf(markdown_content, student_name)
+        pdf_bytes = bytes(_parse_markdown_to_pdf(markdown_content, student_name))
 
         from datetime import date
         filename = f"高考志愿分析报告_{student_name}_{date.today()}.pdf"
