@@ -231,19 +231,38 @@ function formData() {
             }
         },
         
-        // Download report as markdown file
-        downloadReport() {
+        // Download report as PDF
+        async downloadReport() {
             if (!this.report) return;
             
-            const blob = new Blob([this.report.markdown_content], { type: 'text/markdown' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `高考志愿分析报告_${this.student.name || '匿名'}_${new Date().toISOString().slice(0, 10)}.md`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            try {
+                const resp = await fetch('/api/v1/download-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        markdown_content: this.report.markdown_content,
+                        student_name: this.student.name || '匿名'
+                    })
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || '下载失败');
+                }
+
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `高考志愿分析报告_${this.student.name || '匿名'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('PDF download failed:', err);
+                alert('PDF下载失败：' + err.message);
+            }
         }
     };
 }

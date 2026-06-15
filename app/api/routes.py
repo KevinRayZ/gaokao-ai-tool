@@ -1,9 +1,12 @@
 """API 路由"""
 import asyncio
+import io
 import json
 import traceback
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
+import markdown
+from xhtml2pdf import pisa
 
 from app.config import settings
 from app.middleware.rate_limiter import (
@@ -121,3 +124,155 @@ async def analyze_with_progress(request: Request, body: ReportRequest):
             "X-Accel-Buffering": "no",
         }
     )
+
+
+@router.post("/download-pdf")
+async def download_pdf(request: Request):
+    """
+    将 Markdown 报告转换为 PDF 下载
+
+    接收 markdown_content，返回 PDF 文件
+    """
+    body = await request.json()
+    markdown_content = body.get("markdown_content", "")
+    student_name = body.get("student_name", "匿名")
+
+    if not markdown_content:
+        raise HTTPException(status_code=400, detail="报告内容为空")
+
+    try:
+        # Markdown 转 HTML
+        html_body = markdown.markdown(
+            markdown_content,
+            extensions=["tables", "fenced_code", "nl2br"]
+        )
+
+        # 拼接完整 HTML（带样式）
+        styled_html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {{ size: A4; margin: 2cm; }}
+    body {{
+        font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.8;
+        color: #333;
+    }}
+    h1 {{
+        font-size: 22pt;
+        color: #1e3a5f;
+        border-bottom: 3px solid #1e3a5f;
+        padding-bottom: 8px;
+        margin-top: 30px;
+    }}
+    h2 {{
+        font-size: 16pt;
+        color: #2c5282;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 5px;
+        margin-top: 25px;
+    }}
+    h3 {{
+        font-size: 13pt;
+        color: #2d3748;
+        margin-top: 20px;
+    }}
+    h4 {{
+        font-size: 11pt;
+        color: #4a5568;
+        margin-top: 15px;
+    }}
+    table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 10pt;
+    }}
+    th, td {{
+        border: 1px solid #cbd5e0;
+        padding: 8px 10px;
+        text-align: left;
+    }}
+    th {{
+        background-color: #edf2f7;
+        font-weight: 600;
+        color: #2d3748;
+    }}
+    tr:nth-child(even) {{
+        background-color: #f7fafc;
+    }}
+    ul, ol {{
+        padding-left: 20px;
+        margin: 10px 0;
+    }}
+    li {{
+        margin: 5px 0;
+    }}
+    strong {{
+        color: #2d3748;
+    }}
+    em {{
+        color: #718096;
+    }}
+    blockquote {{
+        border-left: 4px solid #4299e1;
+        padding: 10px 15px;
+        margin: 15px 0;
+        background: #ebf8ff;
+        color: #2b6cb0;
+    }}
+    code {{
+        background: #edf2f7;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-size: 10pt;
+    }}
+    hr {{
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 20px 0;
+    }}
+    .footer {{
+        margin-top: 40px;
+        padding-top: 15px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 9pt;
+        color: #a0aec0;
+        text-align: center;
+    }}
+</style>
+</head>
+<body>
+{html_body}
+<div class="footer">
+    本报告由 AI 高考志愿填报工具生成 | 仅供参考，请结合官方数据综合判断
+</div>
+</body>
+</html>"""
+
+        # 生成 PDF
+        pdf_buffer = io.BytesIO()
+        pisa_status = pisa.CreatePDF(styled_html, dest=pdf_buffer, encoding="utf-8")
+
+        if pisa_status.err:
+            raise Exception("PDF 生成失败")
+
+        pdf_bytes = pdf_buffer.getvalue()
+        pdf_buffer.close()
+
+        filename = f"高考志愿分析报告_{student_name}_{__import__('datetime').date.today()}.pdf"
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes)),
+            }
+        )
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"PDF 生成失败：{str(e)}")
