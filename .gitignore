@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reports (generated)
+reports/*.md
+
+# WorkBuddy
+.codebuddy/
+.workbuddy/
+overview.md
+deployment-guide.md
+test_api.py
+test_report_output.md

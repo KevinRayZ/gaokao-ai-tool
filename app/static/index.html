@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高考志愿填报AI分析工具</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-4">高考志愿填报AI分析工具</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">基于人工智能的五维度分析，为您提供个性化的志愿填报建议</p>
+        </header>
+
+        <!-- Usage Indicator -->
+        <div class="max-w-4xl mx-auto mb-4" x-data="usageData()" x-init="fetchUsage()">
+            <div class="flex items-center justify-between bg-white/70 backdrop-blur-sm rounded-xl px-5 py-3 shadow-sm border border-indigo-100">
+                <div class="flex items-center gap-3 text-sm">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <span class="text-gray-600">今日已使用 <strong class="text-indigo-600" x-text="usage.used">0</strong> / <span x-text="usage.limit">20</span> 次</span>
+                </div>
+                <div class="w-32 bg-gray-200 rounded-full h-2">
+                    <div class="rounded-full h-2 transition-all duration-300"
+                         :class="usage.remaining <= 3 ? 'bg-red-500' : usage.remaining <= 10 ? 'bg-yellow-500' : 'bg-indigo-500'"
+                         :style="'width: ' + (usage.used / usage.limit * 100) + '%'"></div>
+                </div>
+                <span class="text-xs text-gray-400">免费使用</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col lg:flex-row gap-8" x-data="formData()">
+            <!-- Input Form -->
+            <div class="lg:w-1/2">
+                <div class="glass-card rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        学生信息
+                    </h2>
+
+                    <form id="analysisForm" @submit.prevent="submitForm()">
+                        <!-- Basic Info -->
+                        <div class="space-y-4 mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">姓名</label>
+                                    <input type="text" x-model="student.name" 
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                           placeholder="可匿名">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">省份</label>
+                                    <select x-model="student.province" 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="">请选择省份</option>
+                                        <template x-for="province in provinces" :key="province">
+                                            <option :value="province" x-text="province"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">高考分数</label>
+                                    <input type="number" x-model="student.score" min="0" max="750"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                           placeholder="0-750">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">省排名（可选）</label>
+                                    <input type="number" x-model="student.rank" min="0"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                           placeholder="如已知">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">高考年份</label>
+                                    <input type="number" x-model="student.year" min="2020" max="2030"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">科类</label>
+                                    <select x-model="student.subject_type" 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="">请选择科类</option>
+                                        <option value="物理类">物理类</option>
+                                        <option value="历史类">历史类</option>
+                                        <option value="理科">理科</option>
+                                        <option value="文科">文科</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">选科组合</label>
+                                    <input type="text" x-model="student.subjectsStr"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                           placeholder="如：物理,化学,生物">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Family Context -->
+                        <div class="space-y-4 mb-8">
+                            <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                家庭背景
+                            </h3>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">家庭经济水平</label>
+                                    <select x-model="family.economic_level" 
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                        <option value="一般">一般</option>
+                                        <option value="困难">困难</option>
+                                        <option value="较好">较好</option>
+                                        <option value="富裕">富裕</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">偏好地区</label>
+                                    <input type="text" x-model="family.location_pref"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                           placeholder="如：长三角、珠三角">
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-4">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" x-model="family.has_abroad_plan" 
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-sm text-gray-700">有出国计划</span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">家庭行业资源</label>
+                                <input type="text" x-model="family.industryStr"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                       placeholder="如有，用逗号分隔">
+                            </div>
+                        </div>
+
+                        <!-- Interests & Goals -->
+                        <div class="space-y-4 mb-8">
+                            <h3 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                兴趣与目标
+                            </h3>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">兴趣方向</label>
+                                <input type="text" x-model="interestsStr"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                       placeholder="如：计算机、医学、金融，用逗号分隔">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">职业目标</label>
+                                <input type="text" x-model="careerGoalsStr"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                       placeholder="如：进大厂、考公务员、创业，用逗号分隔">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">特殊约束</label>
+                                <input type="text" x-model="constraintsStr"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                       placeholder="如：不去北方、不学医，用逗号分隔">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" 
+                                :disabled="loading"
+                                class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <template x-if="loading">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </template>
+                            <span x-text="loading ? '正在分析...' : '开始AI分析'"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Report Display -->
+            <div class="lg:w-1/2">
+                <div class="glass-card rounded-2xl p-6 shadow-lg min-h-[600px]">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        分析报告
+                    </h2>
+
+                    <!-- Empty State -->
+                    <div x-show="!loading && !report" x-cloak class="flex flex-col items-center justify-center h-96 text-gray-500">
+                        <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg">填写学生信息后点击"开始AI分析"</p>
+                        <p class="text-sm mt-2">分析报告将显示在这里</p>
+                    </div>
+
+                    <!-- Loading State with Progress -->
+                    <div x-show="loading" x-cloak class="flex flex-col items-center justify-center h-96 px-8">
+                        <div class="loading-spinner mb-6"></div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full max-w-md mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                <span>分析进度</span>
+                                <span x-text="progress + '%'"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-indigo-600 h-3 rounded-full transition-all duration-500 ease-out"
+                                     :style="'width: ' + progress + '%'"></div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Steps -->
+                        <div class="w-full max-w-md space-y-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                                     :class="progressStep >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'">
+                                    1
+                                </div>
+                                <span class="text-sm" :class="progressStep >= 1 ? 'text-gray-800' : 'text-gray-500'">
+                                    准备学生数据
+                                    <span x-show="progressStep === 1" class="text-indigo-600 ml-2" x-text="progressMessage"></span>
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                                     :class="progressStep >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'">
+                                    2
+                                </div>
+                                <span class="text-sm" :class="progressStep >= 2 ? 'text-gray-800' : 'text-gray-500'">
+                                    AI五维度分析
+                                    <span x-show="progressStep === 2" class="text-indigo-600 ml-2" x-text="progressMessage"></span>
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+                                     :class="progressStep >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'">
+                                    3
+                                </div>
+                                <span class="text-sm" :class="progressStep >= 3 ? 'text-gray-800' : 'text-gray-500'">
+                                    生成分析报告
+                                    <span x-show="progressStep === 3" class="text-indigo-600 ml-2" x-text="progressMessage"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-gray-500 mt-6">预计需要1-2分钟，请耐心等待</p>
+                    </div>
+
+                    <!-- Report Content -->
+                    <div x-show="report && !loading" x-cloak class="prose max-w-none">
+                        <div class="mb-4 flex justify-between items-center">
+                            <span class="text-sm text-gray-500">报告ID: <span x-text="report?.report_id" class="font-mono"></span></span>
+                            <button @click="downloadReport()" 
+                                    class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                下载报告
+                            </button>
+                        </div>
+                        <div id="reportContent" class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm" 
+                             x-html="renderMarkdown(report?.markdown_content || '')">
+                        </div>
+                    </div>
+
+                    <!-- Error State -->
+                    <div x-show="error" x-cloak class="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">
+                        <h3 class="font-semibold mb-2">分析出错</h3>
+                        <p x-text="error"></p>
+                        <button @click="error = null" class="mt-4 text-red-600 hover:text-red-800 underline">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>高考志愿填报AI分析工具 v0.1.0 | 基于人工智能，仅供参考</p>
+            <p class="mt-1">请结合实际情况综合判断，建议咨询学校老师</p>
+        </footer>
+    </div>
+
+    <!-- Markdown rendering library -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Main JavaScript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

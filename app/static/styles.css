@@ -1,0 +1,219 @@
+/* Custom styles for the college application tool */
+
+/* Hide Alpine.js elements until initialized */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Glass morphism effect */
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+/* Loading spinner */
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(99, 102, 241, 0.2);
+    border-left-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Smooth transitions */
+input, select, button {
+    transition: all 0.2s ease;
+}
+
+/* Focus states */
+input:focus, select:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Report styling */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    color: #1e293b;
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.prose h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    text-align: center;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5em;
+}
+
+.prose h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    color: #4f46e5;
+    border-left: 4px solid #6366f1;
+    padding-left: 0.75rem;
+}
+
+.prose h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+}
+
+.prose p {
+    color: #475569;
+    line-height: 1.75;
+    margin-bottom: 1em;
+}
+
+.prose ul, .prose ol {
+    color: #475569;
+    margin-bottom: 1em;
+    padding-left: 1.5em;
+}
+
+.prose li {
+    margin-bottom: 0.5em;
+}
+
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-size: 0.9em;
+}
+
+.prose th, .prose td {
+    border: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.prose th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #334155;
+}
+
+.prose tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.prose blockquote {
+    border-left: 4px solid #6366f1;
+    padding: 0.5em 1em;
+    margin: 1em 0;
+    background-color: #f8fafc;
+    color: #475569;
+    font-style: italic;
+}
+
+.prose strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.prose hr {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin: 2em 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+}
+
+/* Animation for report appearance */
+[x-show] {
+    transition: opacity 0.3s ease;
+}
+
+/* Custom scrollbar for report */
+#reportContent {
+    max-height: 80vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+#reportContent::-webkit-scrollbar {
+    width: 8px;
+}
+
+#reportContent::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+#reportContent::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* Success state for download button */
+button:active {
+    transform: scale(0.98);
+}
+
+/* Tooltip for optional fields */
+[title] {
+    position: relative;
+    cursor: help;
+}
+
+[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Progress bar animation */
+.bg-indigo-600 {
+    background-color: #4f46e5;
+    transition: width 0.5s ease-out;
+}
+
+/* Progress step indicators */
+.rounded-full {
+    transition: all 0.3s ease;
+}
+
+/* Pulse animation for active step */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -1,0 +1,83 @@
+# {{ student.student.name }}的高考志愿填报分析报告
+
+> **生成时间**：{{ generated_at }}
+> **省份**：{{ student.student.province }} | **分数**：{{ student.student.score }} | **科类**：{{ student.student.subject_type }}
+{% if student.student.rank %}
+> **排名**：{{ student.student.rank }}
+{% endif %}
+> **选科**：{{ student.student.subjects | join("、") }}
+{% if student.interests %}
+> **兴趣方向**：{{ student.interests | join("、") }}
+{% endif %}
+{% if student.career_goals %}
+> **职业目标**：{{ student.career_goals | join("、") }}
+{% endif %}
+
+---
+
+## 一、总体填报策略
+
+{{ strategy }}
+
+## 二、风险评估
+
+{{ risk }}
+
+## 三、院校推荐
+
+{% for uni in universities %}
+### {{ loop.index }}. {{ uni.university_name }}（{{ uni.location }}）
+
+- **标签**：{% if uni.is_985 %}985{% endif %}{% if uni.is_211 %} 211{% endif %}{% if uni.is_double_first_class %} 双一流{% endif %}{% if not uni.is_985 and not uni.is_211 and not uni.is_double_first_class %}普通本科{% endif %}
+
+- **录取概率**：{% if uni.admission_probability == "冲" %}🔴 冲一冲{% elif uni.admission_probability == "稳" %}🟡 稳一稳{% else %}🟢 保一保{% endif %}
+
+{% if uni.estimated_rank_range %}
+- **预估排名区间**：{{ uni.estimated_rank_range[0] }} - {{ uni.estimated_rank_range[1] }}
+{% endif %}
+
+#### 推荐专业
+
+{% for major in uni.recommended_majors %}
+**{{ major.major_name }}**（{{ major.category }}）
+
+> **综合评分**：{{ "%.1f" | format(major.overall_score) }}/10
+>
+> **推荐理由**：{{ major.match_reason }}
+
+| 维度 | 评分 | 说明 |
+|------|------|------|
+{% for dim in major.dimensions %}| {{ dim.dimension }} | {{ "%.1f" | format(dim.score) }}/10 | {{ dim.reasoning }} |
+{% endfor %}
+
+{% if major.warnings %}
+> ⚠️ **风险提示**：{{ major.warnings | join("；") }}
+{% endif %}
+
+{% endfor %}
+
+---
+
+{% endfor %}
+
+## 四、填报建议时间线
+
+| 时间节点 | 建议操作 |
+|----------|----------|
+| 成绩公布后 | 确认分数和排名，核对一分一段表 |
+| 志愿填报前 | 完成院校和专业的最终筛选 |
+| 填报期间 | 按照"冲-稳-保"策略填报，注意志愿顺序 |
+| 录取期间 | 关注录取进度，准备征集志愿 |
+
+---
+
+## 五、重要提醒
+
+1. 本报告基于 AI 分析生成，仅供参考，请结合实际情况综合判断
+2. 分数线和排名数据可能有波动，建议参考近 3 年数据
+3. 专业选择要考虑个人兴趣和职业规划，不要盲目追求热门
+4. 建议咨询学校老师和有经验的学长学姐
+
+---
+
+*报告生成时间：{{ generated_at }} | 版本：v1.0*
