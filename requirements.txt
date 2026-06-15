@@ -19,9 +19,6 @@ jinja2>=3.1.0
 # 环境变量
 python-dotenv>=1.0.0
 
-# PDF 生成（纯Python，无系统依赖）
-fpdf2>=2.8.0
-
 # Markdown 转 HTML
 markdown>=3.5.0
 

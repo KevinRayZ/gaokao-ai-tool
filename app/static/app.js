@@ -231,12 +231,12 @@ function formData() {
             }
         },
         
-        // Download report as PDF
+        // Download report as HTML
         async downloadReport() {
             if (!this.report) return;
-            
+
             try {
-                const resp = await fetch('/api/v1/download-pdf', {
+                const resp = await fetch('/api/v1/download-html', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -254,14 +254,14 @@ function formData() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `高考志愿分析报告_${this.student.name || '匿名'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+                a.download = `高考志愿分析报告_${this.student.name || '匿名'}_${new Date().toISOString().slice(0, 10)}.html`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             } catch (err) {
-                console.error('PDF download failed:', err);
-                alert('PDF下载失败：' + err.message);
+                console.error('HTML download failed:', err);
+                alert('下载失败：' + err.message);
             }
         }
     };
