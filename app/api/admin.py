@@ -18,7 +18,8 @@ def _verify_admin_key(admin_key: Optional[str]) -> None:
         )
 
 
-@admin_router.get("", response_class=HTMLResponse)
+@admin_router.get("", response_class=HTMLResponse, include_in_schema=False)
+@admin_router.get("/", response_class=HTMLResponse)
 async def admin_page():
     """返回管理员控制台页面"""
     with open("app/static/admin.html", "r", encoding="utf-8") as f:
