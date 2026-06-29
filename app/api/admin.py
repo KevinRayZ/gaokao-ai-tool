@@ -1,6 +1,7 @@
 """管理员路由 — 兑换码管理接口"""
 from typing import Optional
 from fastapi import APIRouter, Header, HTTPException
+from fastapi.responses import PlainTextResponse
 
 from app.config import settings
 from app.services.code_store import code_store
@@ -61,3 +62,27 @@ async def list_codes(
         "stats": stats,
         "codes": codes,
     }
+
+
+@admin_router.get("/codes/export")
+async def export_codes(
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    format: str = "txt",
+):
+    """
+    导出未使用的兑换码。
+
+    Header: X-Admin-Key
+    Query params: format（txt 或 json）
+    """
+    _verify_admin_key(x_admin_key)
+
+    codes = code_store.get_all_codes()
+    unused = [c for c in codes if not c["is_used"]]
+
+    if format == "json":
+        return {"count": len(unused), "codes": [c["code"] for c in unused]}
+
+    # 默认 txt 格式，每行一个
+    text = "\n".join(c["code"] for c in unused)
+    return PlainTextResponse(text, media_type="text/plain; charset=utf-8")

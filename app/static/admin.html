@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台 - 高考志愿填报AI分析工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .code-cell { font-family: 'Courier New', monospace; letter-spacing: 2px; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">管理员控制台</h1>
+                <p class="text-gray-500 mt-2">请输入管理员密钥以继续</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">管理员密钥</label>
+                    <input type="password" id="adminKeyInput"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                           placeholder="输入管理员密钥"
+                           onkeydown="if(event.key==='Enter') login()">
+                </div>
+                <button onclick="login()"
+                        class="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    登录
+                </button>
+                <p id="loginError" class="text-red-500 text-sm text-center hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard (hidden initially) -->
+    <div id="dashboard" class="hidden">
+        <!-- Top Bar -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        <h1 class="text-xl font-bold text-gray-800">管理员控制台</h1>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">已连接</span>
+                    </div>
+                    <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500 transition">退出登录</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="text-sm text-gray-500 mb-1">总兑换码</div>
+                    <div class="text-3xl font-bold text-gray-800" id="statTotal">-</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="text-sm text-gray-500 mb-1">已使用</div>
+                    <div class="text-3xl font-bold text-amber-600" id="statUsed">-</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="text-sm text-gray-500 mb-1">未使用</div>
+                    <div class="text-3xl font-bold text-green-600" id="statUnused">-</div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="text-sm text-gray-500 mb-1">已发放次数</div>
+                    <div class="text-3xl font-bold text-indigo-600" id="statCredits">-</div>
+                </div>
+            </div>
+
+            <!-- Generate Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    生成兑换码
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">生成数量</label>
+                        <input type="number" id="genCount" value="10" min="1" max="1000"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">每个码次数</label>
+                        <input type="number" id="genCredits" value="1" min="1" max="100"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">总成本 ≈</label>
+                        <div class="text-lg font-bold text-indigo-600" id="genPreview">¥199.0</div>
+                    </div>
+                    <button onclick="generateCodes()" id="genBtn"
+                            class="bg-indigo-600 text-white py-2.5 px-6 rounded-lg font-semibold hover:bg-indigo-700 transition disabled:opacity-50">
+                        生成兑换码
+                    </button>
+                </div>
+                <!-- Generated codes display -->
+                <div id="generatedResult" class="mt-6 hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-gray-700">刚生成的兑换码</h3>
+                        <button onclick="copyAllCodes()" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            一键复制全部
+                        </button>
+                    </div>
+                    <div id="generatedCodes" class="flex flex-wrap gap-2"></div>
+                </div>
+                <p id="genError" class="text-red-500 text-sm mt-2 hidden"></p>
+            </div>
+
+            <!-- Codes List -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        </svg>
+                        兑换码列表
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <select id="codeFilter" onchange="renderCodeTable()"
+                                class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                            <option value="all">全部</option>
+                            <option value="unused">未使用</option>
+                            <option value="used">已使用</option>
+                        </select>
+                        <input type="text" id="codeSearch" oninput="renderCodeTable()"
+                               class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 w-48"
+                               placeholder="搜索兑换码...">
+                        <button onclick="exportUnused()" class="text-sm bg-green-50 text-green-700 px-3 py-1.5 rounded-lg hover:bg-green-100 transition flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            导出未使用
+                        </button>
+                        <button onclick="refreshData()" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            刷新
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">兑换码</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">次数</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">状态</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">创建时间</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">使用时间</th>
+                                <th class="text-left py-3 px-4 font-medium text-gray-500">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="codeTableBody">
+                            <tr><td colspan="6" class="text-center py-8 text-gray-400">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="noCodesMsg" class="text-center py-8 text-gray-400 hidden">暂无兑换码，请先生成</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let adminKey = '';
+        let allCodes = [];
+
+        // ============ Auth ============
+        function login() {
+            const key = document.getElementById('adminKeyInput').value.trim();
+            if (!key) return;
+            // Test the key by fetching the code list
+            fetch(API_BASE + '/admin/codes/list', {
+                headers: { 'X-Admin-Key': key }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('密钥无效');
+                return res.json();
+            })
+            .then(data => {
+                adminKey = key;
+                sessionStorage.setItem('gaokao_admin_key', key);
+                allCodes = data.codes || [];
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                updateStats(data.stats);
+                renderCodeTable();
+            })
+            .catch(err => {
+                const el = document.getElementById('loginError');
+                el.textContent = '管理员密钥无效，请重试';
+                el.classList.remove('hidden');
+            });
+        }
+
+        function logout() {
+            adminKey = '';
+            sessionStorage.removeItem('gaokao_admin_key');
+            allCodes = [];
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('adminKeyInput').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        // ============ Data ============
+        function refreshData() {
+            fetch(API_BASE + '/admin/codes/list', {
+                headers: { 'X-Admin-Key': adminKey }
+            })
+            .then(res => res.json())
+            .then(data => {
+                allCodes = data.codes || [];
+                updateStats(data.stats);
+                renderCodeTable();
+            })
+            .catch(err => {
+                if (err.message.includes('403') || err.message.includes('401')) logout();
+            });
+        }
+
+        function updateStats(stats) {
+            if (!stats) return;
+            document.getElementById('statTotal').textContent = stats.total || 0;
+            document.getElementById('statUsed').textContent = stats.used || 0;
+            document.getElementById('statUnused').textContent = stats.unused || 0;
+            document.getElementById('statCredits').textContent = stats.total_credits_issued || 0;
+        }
+
+        // ============ Generate ============
+        function updatePricePreview() {
+            const count = parseInt(document.getElementById('genCount').value) || 0;
+            const price = 19.9;
+            document.getElementById('genPreview').textContent = '¥' + (count * price).toFixed(1);
+        }
+
+        document.getElementById('genCount').addEventListener('input', updatePricePreview);
+        updatePricePreview();
+
+        function generateCodes() {
+            const count = parseInt(document.getElementById('genCount').value) || 10;
+            const creditsPerCode = parseInt(document.getElementById('genCredits').value) || 1;
+            const btn = document.getElementById('genBtn');
+
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+            document.getElementById('genError').classList.add('hidden');
+
+            fetch(API_BASE + '/admin/codes/generate?count=' + count + '&credits_per_code=' + creditsPerCode, {
+                method: 'POST',
+                headers: { 'X-Admin-Key': adminKey }
+            })
+            .then(res => {
+                if (!res.ok) return res.json().then(e => { throw new Error(e.detail || '生成失败'); });
+                return res.json();
+            })
+            .then(data => {
+                // Show generated codes
+                const container = document.getElementById('generatedCodes');
+                container.innerHTML = data.codes.map(c =>
+                    '<span class="code-cell bg-green-50 border border-green-200 text-green-800 px-3 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-green-100 transition" onclick="copySingle(\'' + c + '\')" title="点击复制">' + c + '</span>'
+                ).join('');
+                document.getElementById('generatedResult').classList.remove('hidden');
+
+                // Refresh everything
+                refreshData();
+            })
+            .catch(err => {
+                const el = document.getElementById('genError');
+                el.textContent = err.message;
+                el.classList.remove('hidden');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = '生成兑换码';
+            });
+        }
+
+        // ============ Table ============
+        function renderCodeTable() {
+            const filter = document.getElementById('codeFilter').value;
+            const search = document.getElementById('codeSearch').value.toUpperCase().trim();
+            const tbody = document.getElementById('codeTableBody');
+
+            let filtered = allCodes;
+            if (filter === 'used') filtered = filtered.filter(c => c.is_used);
+            if (filter === 'unused') filtered = filtered.filter(c => !c.is_used);
+            if (search) filtered = filtered.filter(c => c.code.includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">无匹配的兑换码</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(c => {
+                const statusClass = c.is_used
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-green-100 text-green-700';
+                const statusText = c.is_used ? '已使用' : '未使用';
+                const usedTime = c.used_at ? new Date(c.used_at).toLocaleString('zh-CN') : '-';
+                const createdTime = c.created_at ? new Date(c.created_at).toLocaleString('zh-CN') : '-';
+
+                return '<tr class="border-b border-gray-100 hover:bg-gray-50 transition">' +
+                    '<td class="py-3 px-4 code-cell font-semibold text-gray-800">' + c.code + '</td>' +
+                    '<td class="py-3 px-4 text-gray-600">' + c.credits + ' 次</td>' +
+                    '<td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs font-medium ' + statusClass + '">' + statusText + '</span></td>' +
+                    '<td class="py-3 px-4 text-gray-500 text-xs">' + createdTime + '</td>' +
+                    '<td class="py-3 px-4 text-gray-500 text-xs">' + usedTime + '</td>' +
+                    '<td class="py-3 px-4">' +
+                        '<button onclick="copySingle(\'' + c.code + '\')" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">复制</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        // ============ Copy ============
+        function copySingle(code) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(code).then(() => showCopyToast(code));
+            } else {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = code;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showCopyToast(code);
+            }
+        }
+
+        function copyAllCodes() {
+            const genDiv = document.getElementById('generatedCodes');
+            const spans = genDiv.querySelectorAll('span');
+            const codes = Array.from(spans).map(s => s.textContent).join('\n');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(codes).then(() => showCopyToast('全部兑换码'));
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = codes;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showCopyToast('全部兑换码');
+            }
+        }
+
+        function exportUnused() {
+            fetch(API_BASE + '/admin/codes/export?format=txt', {
+                headers: { 'X-Admin-Key': adminKey }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('导出失败');
+                return res.text();
+            })
+            .then(text => {
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '兑换码_' + new Date().toISOString().slice(0, 10) + '.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+                showCopyToast('已导出 ' + text.split('\n').filter(l => l).length + ' 个未使用兑换码');
+            })
+            .catch(err => {
+                alert('导出失败: ' + err.message);
+            });
+        }
+
+        function showCopyToast(text) {
+            let toast = document.getElementById('copyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'copyToast';
+                toast.className = 'fixed bottom-6 right-6 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-lg transition opacity-0';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = '已复制: ' + text;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+
+        // ============ Init ============
+        // Auto-login if key was saved
+        (function() {
+            const savedKey = sessionStorage.getItem('gaokao_admin_key');
+            if (savedKey) {
+                document.getElementById('adminKeyInput').value = savedKey;
+                login();
+            }
+        })();
+    </script>
+</body>
+</html>

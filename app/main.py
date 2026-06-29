@@ -44,3 +44,10 @@ async def root():
     """返回前端页面"""
     with open("app/static/index.html", "r", encoding="utf-8") as f:
         return f.read()
+
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    """返回管理员控制台页面"""
+    with open("app/static/admin.html", "r", encoding="utf-8") as f:
+        return f.read()
