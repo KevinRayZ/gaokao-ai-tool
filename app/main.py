@@ -1,4 +1,5 @@
 """FastAPI 入口"""
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -6,6 +7,7 @@ from fastapi.responses import HTMLResponse
 
 from app.config import settings
 from app.api.routes import router
+from app.api.admin import admin_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -25,9 +27,16 @@ app.add_middleware(
 
 # 挂载路由
 app.include_router(router)
+app.include_router(admin_router)
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.on_event("startup")
+async def startup_init():
+    """启动时确保 data 目录存在"""
+    Path("data").mkdir(parents=True, exist_ok=True)
 
 
 @app.get("/", response_class=HTMLResponse)

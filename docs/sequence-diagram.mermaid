@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant C as Client
+    participant RL as RateLimiter
+    participant DB as PostgreSQL
+    participant RT as Routes
+    participant LLM as LLMClient
+
+    %% 付费用户请求
+    C->>RL: POST /analyze-with-progress (X-Session-Id: sid123)
+    RL->>DB: SELECT remaining_credits FROM user_credits WHERE session_id='sid123'
+    DB-->>RL: remaining=5
+    RL->>RL: credits>0 → 进入付费模式
+    RL->>DB: UPDATE user_credits SET remaining_credits=4, last_used_at=NOW()
+    RL->>RT: 放行（不检查免费配额）
+    RT->>LLM: 执行分析
+    LLM-->>RT: 分析结果
+    RT-->>C: SSE流 + 报告 + 响应头 X-Credits-Remaining:4
+
+    %% 兑换码兑换
+    C->>PR: POST /api/v1/redeem {code:"ABC12345", session_id:"sid123"}
+    PR->>RS: redeem_code("ABC12345", "sid123")
+    RS->>DB: BEGIN + SELECT FOR UPDATE (行级锁)
+    DB-->>RS: code_row (is_redeemed=False, credits=3)
+    RS->>DB: UPDATE codes SET is_redeemed=True + UPDATE user_credits +=3
+    RS->>DB: COMMIT
+    RS-->>PR: {success:True, credits_added:3}
+    PR-->>C: RedeemResponse
+
+    %% 管理员生成
+    A->>AR: POST /admin/codes/generate (X-Admin-Key) {count:10, credits:1}
+    AR->>AR: 验证 admin_key
+    AR->>RS: generate_codes(10, 1)
+    RS->>RS: 随机8位码(31字符集)
+    RS->>DB: INSERT 10条 redemption_codes
+    RS-->>AR: ["CODE1"..."CODE10"]
+    AR-->>A: GenerateCodesResponse
+
+    %% 应用启动
+    Main->>DB: init_db()
+    DB->>DB: 读DATABASE_URL, 创建连接池
+    DB->>PG: SELECT 1 验证
+    DB->>PG: 执行 schema.sql CREATE TABLE

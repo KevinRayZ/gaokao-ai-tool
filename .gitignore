@@ -10,6 +10,9 @@ env/
 # Environment
 .env
 
+# Data (兑换码存储，运行时生成)
+data/
+
 # IDE
 .vscode/
 .idea/

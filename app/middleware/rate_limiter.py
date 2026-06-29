@@ -22,12 +22,17 @@ def _get_client_ip(request: Request) -> str:
 
 
 def check_daily_limit(request: Request) -> None:
-    """检查每日请求配额，超出则拒绝"""
+    """
+    检查每日请求配额，超出则拒绝
+
+    使用全局上限 daily_request_limit（防滥用，默认100）
+    免费用户的细粒度限制由前端根据 usage.free_limit 控制
+    """
     today = date.today().isoformat()
     count = _daily_counts.get(today, 0)
 
     if count >= settings.daily_request_limit:
-        logger.warning(f"Daily limit reached: {count}/{settings.daily_request_limit}")
+        logger.warning(f"Global daily limit reached: {count}/{settings.daily_request_limit}")
         raise HTTPException(
             status_code=429,
             detail=f"今日请求已达上限（{settings.daily_request_limit}次），请明天再试。",
@@ -47,8 +52,10 @@ def get_usage_info() -> dict:
     return {
         "date": today,
         "used": used,
-        "limit": settings.daily_request_limit,
-        "remaining": settings.daily_request_limit - used,
+        "limit": settings.free_daily_limit,  # 前端显示的是免费额度
+        "remaining": max(0, settings.free_daily_limit - used),
+        "global_used": used,
+        "global_limit": settings.daily_request_limit,
     }
 
 

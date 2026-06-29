@@ -1,7 +1,40 @@
-// Usage data component
+// Usage data component (with redemption code logic)
 function usageData() {
     return {
-        usage: { used: 0, limit: 20, remaining: 20, date: '' },
+        usage: { used: 0, limit: 100, remaining: 100, date: '' },
+
+        // Redemption code state
+        redeemInput: '',
+        redeemLoading: false,
+        redeemMessage: '',
+        redeemSuccess: null,
+
+        // Paid credits state (from localStorage)
+        paidCredits: 0,
+
+        // Free daily limit for display
+        freeDailyLimit: 2,
+
+        init() {
+            this.fetchUsage();
+            this.loadPaidCredits();
+        },
+
+        loadPaidCredits() {
+            const stored = localStorage.getItem('gaokao_paid_credits');
+            this.paidCredits = stored ? parseInt(stored, 10) : 0;
+        },
+
+        savePaidCredits() {
+            localStorage.setItem('gaokao_paid_credits', String(this.paidCredits));
+        },
+
+        // Compute effective remaining: paid credits + free remaining
+        get effectiveRemaining() {
+            const freeRemaining = Math.max(0, this.freeDailyLimit - this.usage.used);
+            return this.paidCredits + freeRemaining;
+        },
+
         async fetchUsage() {
             try {
                 const resp = await fetch('/api/v1/usage');
@@ -11,6 +44,59 @@ function usageData() {
             } catch (e) {
                 console.warn('Failed to fetch usage:', e);
             }
+        },
+
+        async submitRedeem() {
+            if (!this.redeemInput || this.redeemInput.trim() === '') {
+                this.redeemMessage = '请输入兑换码';
+                this.redeemSuccess = false;
+                return;
+            }
+
+            this.redeemLoading = true;
+            this.redeemMessage = '';
+            this.redeemSuccess = null;
+
+            try {
+                const resp = await fetch('/api/v1/redeem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: this.redeemInput.trim() })
+                });
+
+                const data = await resp.json();
+
+                if (data.success) {
+                    this.paidCredits += data.credits;
+                    this.savePaidCredits();
+                    this.redeemMessage = data.message;
+                    this.redeemSuccess = true;
+                    this.redeemInput = '';
+                } else {
+                    this.redeemMessage = data.message;
+                    this.redeemSuccess = false;
+                }
+            } catch (e) {
+                this.redeemMessage = '兑换请求失败，请稍后重试';
+                this.redeemSuccess = false;
+            } finally {
+                this.redeemLoading = false;
+            }
+        },
+
+        // Called after a successful analysis — decrement paid credits if used
+        consumeCredit() {
+            if (this.paidCredits > 0) {
+                this.paidCredits -= 1;
+                this.savePaidCredits();
+            }
+        },
+
+        // Check if user can submit analysis
+        canAnalyze() {
+            if (this.paidCredits > 0) return true;
+            const freeRemaining = Math.max(0, this.freeDailyLimit - this.usage.used);
+            return freeRemaining > 0;
         }
     };
 }
@@ -48,7 +134,7 @@ function formData() {
         progressMessage: '',
         progressStep: 0,
         totalSteps: 3,
-        
+
         // Province list
         provinces: [
             '北京', '天津', '上海', '重庆',
@@ -59,18 +145,18 @@ function formData() {
             '台湾', '内蒙古', '广西', '西藏', '宁夏', '新疆',
             '香港', '澳门'
         ],
-        
+
         // Initialize
         init() {
             console.log('College application tool initialized');
         },
-        
+
         // Parse comma-separated string to array
         parseArray(str) {
             if (!str || str.trim() === '') return [];
             return str.split(',').map(item => item.trim()).filter(item => item !== '');
         },
-        
+
         // Build request payload
         buildPayload() {
             return {
@@ -97,7 +183,7 @@ function formData() {
                 report_type: "full"
             };
         },
-        
+
         // Validate form
         validateForm() {
             if (!this.student.province) {
@@ -112,10 +198,21 @@ function formData() {
                 this.error = '请选择科类';
                 return false;
             }
+
+            // Check credits
+            const usageComp = document.querySelector('[x-data="usageData()"]');
+            if (usageComp && usageComp.__x) {
+                const usageState = usageComp.__x.$data;
+                if (!usageState.canAnalyze()) {
+                    this.error = '今日免费次数已用完，请兑换码获取更多次数';
+                    return false;
+                }
+            }
+
             this.error = null;
             return true;
         },
-        
+
         // Submit form with progress updates
         async submitForm() {
             if (!this.validateForm()) return;
@@ -127,6 +224,9 @@ function formData() {
             this.progressMessage = '正在初始化...';
             this.progressStep = 0;
 
+            // Read paid credits for header
+            const paidCredits = parseInt(localStorage.getItem('gaokao_paid_credits') || '0', 10);
+
             try {
                 const payload = this.buildPayload();
                 console.log('Sending request with progress:', payload);
@@ -137,6 +237,7 @@ function formData() {
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'text/event-stream',
+                        'X-Paid-Credits': String(paidCredits),
                     },
                     body: JSON.stringify(payload)
                 });
@@ -146,8 +247,9 @@ function formData() {
                         const errorData = await response.json().catch(() => ({}));
                         this.error = errorData.detail || '今日请求次数已达上限，请明天再试。';
                         // Refresh usage display
-                        if (typeof window !== 'undefined') {
-                            document.querySelector('[x-data]')?.__x?.$data?.fetchUsage?.();
+                        const usageComp = document.querySelector('[x-data="usageData()"]');
+                        if (usageComp && usageComp.__x) {
+                            usageComp.__x.$data.fetchUsage();
                         }
                         throw new Error(this.error);
                     }
@@ -187,6 +289,13 @@ function formData() {
                                 if (data.data) {
                                     this.report = data.data;
                                     console.log('Received report:', this.report);
+
+                                    // Consume a paid credit if applicable
+                                    const usageComp = document.querySelector('[x-data="usageData()"]');
+                                    if (usageComp && usageComp.__x) {
+                                        usageComp.__x.$data.consumeCredit();
+                                        usageComp.__x.$data.fetchUsage();
+                                    }
                                 }
                             } catch (parseErr) {
                                 console.warn('Failed to parse SSE data:', parseErr);
@@ -214,7 +323,7 @@ function formData() {
                 this.loading = false;
             }
         },
-        
+
         // Render markdown to HTML
         renderMarkdown(markdown) {
             if (!markdown) return '';
@@ -230,7 +339,7 @@ function formData() {
                 return `<p class="text-red-500">报告渲染失败: ${err.message}</p>`;
             }
         },
-        
+
         // Download report as HTML
         async downloadReport() {
             if (!this.report) return;

@@ -1,0 +1,85 @@
+classDiagram
+    class RedeemRequest {
+        +String code
+        +String session_id
+    }
+    class RedeemResponse {
+        +Boolean success
+        +Integer credits_added
+        +Integer total_remaining
+        +String message
+    }
+    class GenerateCodesRequest {
+        +Integer count
+        +Integer credits
+    }
+    class GenerateCodesResponse {
+        +Boolean success
+        +List~String~ codes
+        +String message
+    }
+    class CodeInfo {
+        +String code
+        +Integer credits
+        +Boolean is_redeemed
+        +String redeemed_by
+        +String redeemed_at
+        +String created_at
+    }
+    class CreditInfo {
+        +Integer remaining_credits
+        +Integer free_remaining
+        +Integer free_used
+        +Integer free_limit
+        +String date
+    }
+    class UsageInfo {
+        +String date
+        +Integer free_used
+        +Integer free_limit
+        +Integer free_remaining
+        +Integer paid_remaining
+        +Boolean is_premium
+    }
+
+    class RedemptionService {
+        +generate_codes(count, credits) List~str~
+        +redeem_code(code, session_id) dict
+        +get_user_credits(session_id) int
+        +deduct_credit(session_id) bool
+        +list_codes(offset, limit) List~CodeInfo~
+    }
+
+    class Database {
+        -pool : ThreadedConnectionPool
+        +get_connection() connection
+        +init_db() void
+        +get_db() context_manager
+    }
+
+    class RateLimiter {
+        -_daily_counts : dict
+        -_minute_windows : dict
+        +check_daily_limit(request, session_id) void
+        +check_rate_limit(request) void
+        +increment_daily_count(session_id) void
+        +get_usage_info(session_id) UsageInfo
+    }
+
+    class PaymentRouter {
+        +POST /api/v1/redeem RedeemResponse
+        +GET /api/v1/credits CreditInfo
+    }
+
+    class AdminRouter {
+        +POST /admin/codes/generate GenerateCodesResponse
+        +GET /admin/codes/list List~CodeInfo~
+    }
+
+    RedeemRequest --> RedeemResponse : request→response
+    GenerateCodesRequest --> GenerateCodesResponse : request→response
+    Database --> RedemptionService : provides connection
+    RedemptionService --> PaymentRouter : business logic
+    RedemptionService --> AdminRouter : business logic
+    Database --> RateLimiter : provides connection
+    RateLimiter --> Routes : middleware check

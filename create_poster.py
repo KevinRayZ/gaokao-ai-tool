@@ -38,7 +38,7 @@ def create_poster():
     # Title
     title = "AI 高考志愿填报分析工具"
     draw.text((W // 2, 55), title, fill=WHITE, font=font_title, anchor="mt")
-    subtitle = "五维度智能分析 | 融合张雪峰思维框架 | AI驱动"
+    subtitle = "五维度智能分析 | 融合多位名师方法论 | AI驱动"
     draw.text((W // 2, 130), subtitle, fill="#C7D2FE", font=font_subtitle, anchor="mt")
     tagline = "输入学生信息，1-2分钟生成个性化志愿填报分析报告"
     draw.text((W // 2, 175), tagline, fill="#A5B4FC", font=font_small, anchor="mt")
@@ -128,7 +128,7 @@ def create_poster():
     # ---- Section: Five Dimensions ----
     y = start_y + 2 * (box_h + gap_y + 20) + 40
     draw.text((60, y), "五维度分析模型", fill=DARK, font=font_section, anchor="lt")
-    draw.text((250, y + 4), "融合张雪峰等名师思维框架", fill=GRAY, font=font_small, anchor="lt")
+    draw.text((250, y + 4), "融合洪向阳、张雪峰、张勋等名师思维框架", fill=GRAY, font=font_small, anchor="lt")
 
     y += 45
     dims = [
@@ -195,7 +195,7 @@ def create_poster():
 
     # ---- Section: Zhang Xuefeng Framework ----
     y += dim_h + 50
-    draw.text((60, y), "张雪峰思维框架（核心方法论）", fill=DARK, font=font_section, anchor="lt")
+    draw.text((60, y), "名师思维框架（核心方法论）", fill=DARK, font=font_section, anchor="lt")
     y += 45
 
     principles = [
@@ -228,7 +228,7 @@ def create_poster():
     advantages = [
         ("AI驱动", "联网采集最新数据，AI深度分析，报告量身定制", BLUE),
         ("五维度评估", "不只是看分数，就业/经济/匹配/政策/趋势全覆盖", PURPLE),
-        ("张雪峰框架", "融合名师实战方法论，普通家庭也能做出聪明选择", INDIGO),
+        ("名师框架", "融合多位名师实战方法论，普通家庭也能做出聪明选择", INDIGO),
         ("冲稳保策略", "梯度式推荐，每个层次都有明确理由和风险提示", GREEN),
     ]
 

@@ -20,6 +20,7 @@ from app.models.report import ReportRequest, ReportResponse
 from app.services.data_collector import DataCollector
 from app.services.analysis_engine import AnalysisEngine
 from app.services.report_generator import ReportGenerator
+from app.services.code_store import code_store
 
 router = APIRouter(prefix="/api/v1", tags=["志愿分析"])
 
@@ -205,6 +206,23 @@ async def health_check():
 async def usage_info():
     """查询今日用量"""
     return get_usage_info()
+
+
+@router.post("/redeem")
+async def redeem_code(request: Request):
+    """
+    兑换码兑换接口。
+
+    不使用 HTTPException，以便前端解析 success/message 字段。
+    """
+    body = await request.json()
+    code = body.get("code", "")
+
+    if not code:
+        return {"success": False, "credits": 0, "message": "请输入兑换码"}
+
+    result = code_store.redeem_code(code)
+    return result
 
 
 @router.post("/analyze", response_model=ReportResponse)

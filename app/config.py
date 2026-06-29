@@ -22,8 +22,11 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # 用量限制配置
-    daily_request_limit: int = 20  # 每日最大请求次数（Railway免费额度内）
+    daily_request_limit: int = 100  # 全局每日最大请求次数（防滥用上限）
     rate_limit_per_minute: int = 5  # 每分钟最大请求次数
+
+    # 付费配置
+    admin_key: str = "change-me-in-env"  # 管理员接口密钥，务必在 .env 中修改
 
     class Config:
         env_file = ".env"
