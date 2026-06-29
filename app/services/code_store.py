@@ -1,12 +1,9 @@
 """兑换码存储与管理 — JSON 文件持久化"""
 import json
-import os
 import random
-import string
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

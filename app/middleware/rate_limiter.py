@@ -52,10 +52,9 @@ def get_usage_info() -> dict:
     return {
         "date": today,
         "used": used,
-        "limit": settings.free_daily_limit,  # 前端显示的是免费额度
-        "remaining": max(0, settings.free_daily_limit - used),
-        "global_used": used,
         "global_limit": settings.daily_request_limit,
+        "price": settings.price_per_analysis,
+        "wechat": settings.contact_wechat,
     }
 
 

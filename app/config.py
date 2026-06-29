@@ -27,6 +27,8 @@ class Settings(BaseSettings):
 
     # 付费配置
     admin_key: str = "change-me-in-env"  # 管理员接口密钥，务必在 .env 中修改
+    price_per_analysis: str = "19.9"     # 每次分析价格（元），用于前端展示
+    contact_wechat: str = "rayz1000"     # 联系微信，用于前端展示
 
     class Config:
         env_file = ".env"

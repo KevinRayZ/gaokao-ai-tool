@@ -1,4 +1,5 @@
 """管理员路由 — 兑换码管理接口"""
+from typing import Optional
 from fastapi import APIRouter, Header, HTTPException
 
 from app.config import settings
@@ -14,9 +15,6 @@ def _verify_admin_key(admin_key: Optional[str]) -> None:
             status_code=403,
             detail="管理员密钥无效",
         )
-
-
-from typing import Optional
 
 
 @admin_router.post("/codes/generate")

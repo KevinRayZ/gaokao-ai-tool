@@ -1,7 +1,7 @@
-// Usage data component (with redemption code logic)
+// Usage data component (paid-only + redemption code logic)
 function usageData() {
     return {
-        usage: { used: 0, limit: 100, remaining: 100, date: '' },
+        usage: { used: 0, global_limit: 100, date: '', price: '19.9', wechat: 'rayz1000' },
 
         // Redemption code state
         redeemInput: '',
@@ -12,8 +12,8 @@ function usageData() {
         // Paid credits state (from localStorage)
         paidCredits: 0,
 
-        // Free daily limit for display
-        freeDailyLimit: 2,
+        // Copy WeChat ID state
+        copySuccess: false,
 
         init() {
             this.fetchUsage();
@@ -27,12 +27,6 @@ function usageData() {
 
         savePaidCredits() {
             localStorage.setItem('gaokao_paid_credits', String(this.paidCredits));
-        },
-
-        // Compute effective remaining: paid credits + free remaining
-        get effectiveRemaining() {
-            const freeRemaining = Math.max(0, this.freeDailyLimit - this.usage.used);
-            return this.paidCredits + freeRemaining;
         },
 
         async fetchUsage() {
@@ -84,7 +78,35 @@ function usageData() {
             }
         },
 
-        // Called after a successful analysis — decrement paid credits if used
+        // Copy WeChat ID to clipboard
+        copyWechatId() {
+            const wechatId = this.usage.wechat || 'rayz1000';
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(wechatId).then(() => {
+                    this.copySuccess = true;
+                    setTimeout(() => { this.copySuccess = false; }, 2000);
+                }).catch(() => {
+                    this._fallbackCopy(wechatId);
+                });
+            } else {
+                this._fallbackCopy(wechatId);
+            }
+        },
+
+        _fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            this.copySuccess = true;
+            setTimeout(() => { this.copySuccess = false; }, 2000);
+        },
+
+        // Called after a successful analysis — decrement paid credits
         consumeCredit() {
             if (this.paidCredits > 0) {
                 this.paidCredits -= 1;
@@ -92,11 +114,9 @@ function usageData() {
             }
         },
 
-        // Check if user can submit analysis
+        // Check if user can submit analysis (must have paid credits)
         canAnalyze() {
-            if (this.paidCredits > 0) return true;
-            const freeRemaining = Math.max(0, this.freeDailyLimit - this.usage.used);
-            return freeRemaining > 0;
+            return this.paidCredits > 0;
         }
     };
 }
@@ -199,14 +219,11 @@ function formData() {
                 return false;
             }
 
-            // Check credits
-            const usageComp = document.querySelector('[x-data="usageData()"]');
-            if (usageComp && usageComp.__x) {
-                const usageState = usageComp.__x.$data;
-                if (!usageState.canAnalyze()) {
-                    this.error = '今日免费次数已用完，请兑换码获取更多次数';
-                    return false;
-                }
+            // Check paid credits — must have at least 1 credit
+            const paidCredits = parseInt(localStorage.getItem('gaokao_paid_credits') || '0', 10);
+            if (paidCredits <= 0) {
+                this.error = '请先兑换码获取分析次数（分析服务 19.9元/次）';
+                return false;
             }
 
             this.error = null;
@@ -290,7 +307,7 @@ function formData() {
                                     this.report = data.data;
                                     console.log('Received report:', this.report);
 
-                                    // Consume a paid credit if applicable
+                                    // Consume a paid credit
                                     const usageComp = document.querySelector('[x-data="usageData()"]');
                                     if (usageComp && usageComp.__x) {
                                         usageComp.__x.$data.consumeCredit();
