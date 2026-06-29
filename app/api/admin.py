@@ -1,7 +1,7 @@
 """管理员路由 — 兑换码管理接口"""
 from typing import Optional
 from fastapi import APIRouter, Header, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, HTMLResponse
 
 from app.config import settings
 from app.services.code_store import code_store
@@ -16,6 +16,13 @@ def _verify_admin_key(admin_key: Optional[str]) -> None:
             status_code=403,
             detail="管理员密钥无效",
         )
+
+
+@admin_router.get("", response_class=HTMLResponse)
+async def admin_page():
+    """返回管理员控制台页面"""
+    with open("app/static/admin.html", "r", encoding="utf-8") as f:
+        return f.read()
 
 
 @admin_router.post("/codes/generate")
