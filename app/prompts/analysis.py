@@ -102,6 +102,7 @@ def build_analysis_prompt(
 - 对兴趣方向明确但就业前景不佳的组合，要诚实预警（如"想学生物但非985博士"）
 
 注意：请保持输出简洁，每个维度的reasoning控制在30字以内，key_factors最多2个。
+dimension字段必须使用中文维度名称：就业导向、经济理性、个人匹配、政策环境、趋势前瞻。
 
 请以 JSON 格式返回：
 ```json
@@ -121,7 +122,7 @@ def build_analysis_prompt(
           "category": "学科门类",
           "dimensions": [
             {{
-              "dimension": "career_orientation",
+              "dimension": "就业导向",
               "score": 8.5,
               "reasoning": "简短依据",
               "key_factors": ["因素1", "因素2"]

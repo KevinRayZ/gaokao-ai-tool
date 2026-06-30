@@ -16,6 +16,24 @@ from app.prompts.analysis import (
     build_analysis_prompt,
 )
 
+# 英文维度名 → 中文维度名（兜底翻译，防止LLM返回英文）
+_DIMENSION_NAME_MAP = {
+    "career_orientation": "就业导向",
+    "economic_rationality": "经济理性",
+    "personal_fit": "个人匹配",
+    "personal_match": "个人匹配",
+    "policy_environment": "政策环境",
+    "trend_outlook": "趋势前瞻",
+    "trend_forecast": "趋势前瞻",
+}
+
+
+def _normalize_dimension_name(name: str) -> str:
+    """将英文维度名翻译为中文，已经是中文的保持不变"""
+    if not name:
+        return name
+    return _DIMENSION_NAME_MAP.get(name.strip().lower(), name)
+
 
 class AnalysisEngine:
     """五维度分析引擎"""
@@ -119,7 +137,7 @@ class AnalysisEngine:
                 for dim_data in major_data.get("dimensions", []):
                     dimensions.append(
                         DimensionScore(
-                            dimension=dim_data.get("dimension", ""),
+                            dimension=_normalize_dimension_name(dim_data.get("dimension", "")),
                             score=dim_data.get("score", 0),
                             reasoning=dim_data.get("reasoning", ""),
                             key_factors=dim_data.get("key_factors", []),
